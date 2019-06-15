@@ -1,6 +1,9 @@
+import projektPaczkKlient.Sender;
+
 import static java.nio.file.StandardWatchEventKinds.*;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -19,6 +22,7 @@ public class Klient {
     private final WatchService watcher;
     private final Map<WatchKey, Path> keys;
 
+    private Socket socket;
 
     /**
      * Creates a WatchService and registers the given directory
@@ -35,7 +39,7 @@ public class Klient {
      */
     private void registerDirectory(Path dir) throws IOException
     {
-        WatchKey key = dir.register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
+        WatchKey key = dir.register(watcher, ENTRY_CREATE, ENTRY_MODIFY);
         keys.put(key, dir);
     }
 
@@ -56,7 +60,7 @@ public class Klient {
     /**
      * Process all events for keys queued to the watcher
      */
-    void processEvents() {
+    void processEvents(String username,Socket socket) {
         for (;;) {
 
             // wait for key to be signalled
@@ -83,8 +87,11 @@ public class Klient {
                 Path child = dir.resolve(name);
 
                 // print out event
-                System.out.format("%s: %s\n", event.kind().name(), child);
-
+                //System.out.format("%s: %s\n", event.kind().name(), child);
+                if(kind == ENTRY_CREATE || kind == ENTRY_MODIFY){
+                    System.out.printf("what kind? %s\n", kind.name());
+                    new Sender(socket,username,child.toString()).run();
+                }
                 // if directory is created, and watching recursively, then register it and its sub-directories
                 if (kind == ENTRY_CREATE) {
                     try {
@@ -117,8 +124,13 @@ public class Klient {
         }
         String username = args[0];
         String filepath = args[1];
-
+        Socket socket;
+        try{
+        socket = new Socket("127.0.0.1", 59898);}
+        finally {
+            System.out.println("connected to sever");
+        }
         Path dir = Paths.get(filepath);
-        new Klient(dir).processEvents();
+        new Klient(dir).processEvents(username,socket);
     }
 }
