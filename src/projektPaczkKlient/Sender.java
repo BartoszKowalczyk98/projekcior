@@ -28,8 +28,10 @@ public class Sender implements Runnable{
     @Override
     public void run()  {
         try {
-            byte[] bytesarray = fileToBytearr(this.filepath);
             File f = new File(this.filepath);
+
+            if ((!f.exists()) || f.isDirectory()) return;// if file does not exist or is a directory
+            byte[] bytesarray = fileToBytearr(this.filepath);
             String filename = f.getName();
             /*DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
             dos.write(bytesarray);

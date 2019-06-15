@@ -12,13 +12,7 @@ public class Serwer {
         String dirpath = "C:\\Users\\kowal\\IdeaProjects\\projekcior\\cos";
         for(int i =1;i<6;i++){
             File dir = new File(dirpath+i);
-
-            if(dir.mkdir()){
-                System.out.println(dirpath+i+" Directory created succefully!");
-            }
-            else{
-                System.out.println("something went wrong with creating directories");
-            }
+            dir.mkdir();
         }
         try (ServerSocket listener = new ServerSocket(59898)){
             System.out.println("server is running");
@@ -31,6 +25,7 @@ public class Serwer {
             System.out.println("problem with setting up server");
         }
     }
+
     private static class ClientHandler implements Runnable{
         private Socket socket;
         private String filepath;
