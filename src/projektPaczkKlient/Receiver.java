@@ -3,6 +3,8 @@ package projektPaczkKlient;
 import java.io.*;
 import java.net.Socket;
 
+import static java.lang.Thread.sleep;
+
 public class Receiver implements Runnable{
     public Socket socket;
     public String from;
@@ -10,7 +12,7 @@ public class Receiver implements Runnable{
     public Receiver(Socket socket, String from, String whereto) {
         this.socket = socket;
         this.from = from;
-        this.filepath = whereto;
+        this.filepath = whereto+"\\";
     }
 
     @Override
@@ -25,7 +27,6 @@ public class Receiver implements Runnable{
             File file = new File(filepath+fileWithUsername.filename);
             file.createNewFile();
             if(file.exists()){
-                //System.out.println("Error file already exists!");
                 file.delete();
             }
 
@@ -34,9 +35,8 @@ public class Receiver implements Runnable{
             fos.write(fileWithUsername.bytesarray);
 
             //zamkniecie tego co nie potrzebne
-            //ois.close();
             fos.close();
-
+            sleep(100);
         }
         catch (FileNotFoundException fifex){
             System.out.println("file not found exception in receiving!");
@@ -49,6 +49,10 @@ public class Receiver implements Runnable{
         catch (ClassNotFoundException cnfex){
             System.out.println("Error class not found!");
             cnfex.printStackTrace();
+        }
+        catch (InterruptedException intex){
+            System.out.println("interrupted exception");
+            intex.printStackTrace();
         }
     }
 }

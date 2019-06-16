@@ -132,5 +132,6 @@ public class Klient {
         }
         Path dir = Paths.get(filepath);
         new Klient(dir).processEvents(username,socket);
+        // TODO: 16.06.2019  odpytywanie o nowe pliki 
     }
 }

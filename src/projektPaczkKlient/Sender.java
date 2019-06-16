@@ -33,12 +33,10 @@ public class Sender implements Runnable{
             if ((!f.exists()) || f.isDirectory()) return;// if file does not exist or is a directory
             byte[] bytesarray = fileToBytearr(this.filepath);
             String filename = f.getName();
-            /*DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
-            dos.write(bytesarray);
-            dos.close();*/
+
             ObjectOutputStream obs = new ObjectOutputStream(socket.getOutputStream());
             obs.writeObject(new FileWithUsername(this.from,bytesarray,filename));
-            //obs.close();
+
         }
         catch(IOException ioex){
             ioex.printStackTrace();

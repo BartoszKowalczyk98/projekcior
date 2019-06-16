@@ -3,13 +3,16 @@ import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Serwer {
     public static void main(String[] args){
         //creating 5 directories
-        String dirpath = "C:\\Users\\kowal\\IdeaProjects\\projekcior\\cos";
+        String dirpath = "C:\\Users\\kowal\\IdeaProjects\\projekcior\\Dysk";
         for(int i =1;i<6;i++){
             File dir = new File(dirpath+i);
             dir.mkdir();
@@ -29,24 +32,38 @@ public class Serwer {
     private static class ClientHandler implements Runnable{
         private Socket socket;
         private String filepath;
+        private List<DirectroyWithSize> disc = new ArrayList<DirectroyWithSize>();
+
         ClientHandler(Socket socket,String directory) {
             this.socket=socket;
-            this.filepath = directory+"1\\";
+            this.filepath = directory;
+            for(int i =1;i<6;i++){
+                disc.add(new DirectroyWithSize(directory+i));
+            }
         }
 
         @Override
         public void run() {
             System.out.println("connected to "+ socket);
             try {
+                // TODO: 16.06.2019 tutaj wysylanie na poczatku polaczenia
                 while (true) {
-                    /*Receiver odbieracz =*/ new Receiver(socket, "username", filepath).run();
-//                    odbieracz.run();
+                    disc.get(0).updateSize();
+                    Collections.sort(disc);
+                    new Receiver(socket, "username", disc.get(0).dirpath).run();
+
                 }
             }
             finally {
                 System.out.println("client fucked up something");
             }
         }
+
+
     }
 
 }
+// TODO: 16.06.2019 rozkladanie na wiele dyskow 
+// TODO: 16.06.2019 plik co do kogo nalezy 
+// TODO: 16.06.2019 drugi klient
+// TODO: 16.06.2019 rownolegle przesylanie
