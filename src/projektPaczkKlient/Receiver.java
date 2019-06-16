@@ -19,7 +19,7 @@ public class Receiver implements Runnable{
     public void run() {
 
         try {
-            //wczytanie obiektu ze streama
+            ///wczytanie obiektu ze streama
             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
             FileWithUsername fileWithUsername =(FileWithUsername) ois.readObject();
 
@@ -36,7 +36,11 @@ public class Receiver implements Runnable{
 
             //zamkniecie tego co nie potrzebne
             fos.close();
-            sleep(100);
+            if(from.equals("server")){
+                //adding entry into csv file
+                new CSVFileHandler(filepath+"info.csv").appendingToCSVFile(fileWithUsername.Username,filepath+fileWithUsername.filename);
+            }
+            sleep(100);//tymczasowy sleep nie do konca potrzebny ale jest
         }
         catch (FileNotFoundException fifex){
             System.out.println("file not found exception in receiving!");
@@ -53,6 +57,9 @@ public class Receiver implements Runnable{
         catch (InterruptedException intex){
             System.out.println("interrupted exception");
             intex.printStackTrace();
+        }
+        finally {
+            return;
         }
     }
 }

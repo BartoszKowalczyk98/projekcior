@@ -3,6 +3,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.cert.CertPathValidatorSpi;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -13,9 +14,17 @@ public class Serwer {
     public static void main(String[] args){
         //creating 5 directories
         String dirpath = "C:\\Users\\kowal\\IdeaProjects\\projekcior\\Dysk";
-        for(int i =1;i<6;i++){
-            File dir = new File(dirpath+i);
-            dir.mkdir();
+        try {
+            for(int i =1;i<6;i++){
+                File dir = new File(dirpath+i);
+                dir.mkdir();
+                new CSVFileHandler(dirpath+i+"\\info.csv").createCSVFile();
+            }
+        }
+        catch (IOException ioex)
+        {
+            System.out.println("problem with cvsfilecreating");
+            return;
         }
         try (ServerSocket listener = new ServerSocket(59898)){
             System.out.println("server is running");
@@ -26,13 +35,14 @@ public class Serwer {
         }
         catch (IOException ioex){
             System.out.println("problem with setting up server");
+            return;
         }
     }
 
     private static class ClientHandler implements Runnable{
         private Socket socket;
         private String filepath;
-        private List<DirectroyWithSize> disc = new ArrayList<DirectroyWithSize>();
+        private List<DirectroyWithSize> disc = new ArrayList<>();
 
         ClientHandler(Socket socket,String directory) {
             this.socket=socket;
@@ -40,17 +50,19 @@ public class Serwer {
             for(int i =1;i<6;i++){
                 disc.add(new DirectroyWithSize(directory+i));
             }
+
         }
 
         @Override
         public void run() {
             System.out.println("connected to "+ socket);
+
             try {
                 // TODO: 16.06.2019 tutaj wysylanie na poczatku polaczenia
                 while (true) {
                     disc.get(0).updateSize();
                     Collections.sort(disc);
-                    new Receiver(socket, "username", disc.get(0).dirpath).run();
+                    new Receiver(socket, "server", disc.get(0).dirpath).run();
 
                 }
             }
