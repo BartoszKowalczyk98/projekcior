@@ -1,11 +1,7 @@
 package projektPaczkKlient;
 
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
-
 import java.io.*;
 import java.net.Socket;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class Sender implements Runnable{
     private Socket socket;
