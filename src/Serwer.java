@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static projektPaczkKlient.CSVFileHandler.createCSVFile;
+import static projektPaczkKlient.Messenger.receiveMessage;
 
 public class Serwer {
     public static void main(String[] args){
@@ -58,6 +59,8 @@ public class Serwer {
         public void run() {
             System.out.println("connected to "+ socket);
 
+            System.out.println(receiveMessage(socket));
+
             try {
                 // TODO: 16.06.2019 tutaj wysylanie na poczatku polaczenia
                 while (true) {
@@ -76,7 +79,7 @@ public class Serwer {
     }
 
 }
-// TODO: 16.06.2019 rozkladanie na wiele dyskow 
-// TODO: 16.06.2019 plik co do kogo nalezy 
+
+
 // TODO: 16.06.2019 drugi klient
 // TODO: 16.06.2019 rownolegle przesylanie
