@@ -2,14 +2,14 @@ package projektPaczkKlient;
 
 import java.io.*;
 
-public class CSVFileHandler {
-    public String filepath;
+public interface CSVFileHandler {
+    //public String filepath;
 
-    public CSVFileHandler(String filepath) {
+    /*public CSVFileHandler(String filepath) {
         this.filepath = filepath;
-    }
+    }*/
 
-    public boolean createCSVFile() throws  IOException{
+    static boolean createCSVFile(String filepath) throws  IOException{
 
             File file = new File(filepath);
             if(file.exists())
@@ -19,9 +19,10 @@ public class CSVFileHandler {
                 return true;
     }
 
-    public boolean appendingToCSVFile(String username,String filename) throws  IOException{
+    static boolean appendingToCSVFile(String username,String filename ,String filepath) throws  IOException{
 
         File csvfile = new File(filepath);
+        
         if(csvfile.isFile()) {
             FileWriter cvsWriter = new FileWriter(csvfile);
             cvsWriter.append(username);

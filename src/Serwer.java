@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static projektPaczkKlient.CSVFileHandler.createCSVFile;
+
 public class Serwer {
     public static void main(String[] args){
         //creating 5 directories
@@ -17,7 +19,7 @@ public class Serwer {
             for(int i =1;i<6;i++){
                 File dir = new File(dirpath+i);
                 dir.mkdir();
-                new CSVFileHandler(dirpath+i+"\\info.csv").createCSVFile();
+                createCSVFile(dirpath+"\\info.cvs");
             }
         }
         catch (IOException ioex)
@@ -60,7 +62,7 @@ public class Serwer {
                 // TODO: 16.06.2019 tutaj wysylanie na poczatku polaczenia
                 while (true) {
                     disc.get(0).updateSize();
-                    Collections.sort(disc);
+                    Collections.sort(disc,Collections.reverseOrder());
                     new Receiver(socket, "server", disc.get(0).dirpath).run();
 
                 }

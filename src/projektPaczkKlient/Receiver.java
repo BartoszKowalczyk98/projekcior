@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.Socket;
 
 import static java.lang.Thread.sleep;
+import static projektPaczkKlient.CSVFileHandler.appendingToCSVFile;
 
 public class Receiver implements Runnable{
     public Socket socket;
@@ -38,7 +39,7 @@ public class Receiver implements Runnable{
             fos.close();
             if(from.equals("server")){
                 //adding entry into csv file
-                new CSVFileHandler(filepath+"info.csv").appendingToCSVFile(fileWithUsername.Username,filepath+fileWithUsername.filename);
+                appendingToCSVFile(fileWithUsername.Username,filepath+filepath,filepath+"info.csv");
             }
             sleep(100);//tymczasowy sleep nie do konca potrzebny ale jest
         }
