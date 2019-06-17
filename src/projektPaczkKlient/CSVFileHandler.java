@@ -22,7 +22,7 @@ public interface CSVFileHandler {
     static boolean appendingToCSVFile(String username,String filename ,String filepath) throws  IOException{
 
         File csvfile = new File(filepath);
-        
+
         if(csvfile.isFile()) {
             FileWriter cvsWriter = new FileWriter(csvfile);
             cvsWriter.append(username);
@@ -31,6 +31,7 @@ public interface CSVFileHandler {
             cvsWriter.append('\n');
             cvsWriter.flush();
             cvsWriter.close();
+
             return true;
         }
         return false;

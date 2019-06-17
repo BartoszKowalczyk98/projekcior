@@ -39,7 +39,7 @@ public class Receiver implements Runnable{
             fos.close();
             if(from.equals("server")){
                 //adding entry into csv file
-                appendingToCSVFile(fileWithUsername.Username,filepath+filepath,filepath+"info.csv");
+                appendingToCSVFile(fileWithUsername.Username,filepath+fileWithUsername.filename,filepath+"info.csv");
             }
             sleep(100);//tymczasowy sleep nie do konca potrzebny ale jest
         }

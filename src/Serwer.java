@@ -19,7 +19,7 @@ public class Serwer {
             for(int i =1;i<6;i++){
                 File dir = new File(dirpath+i);
                 dir.mkdir();
-                createCSVFile(dirpath+"\\info.cvs");
+                createCSVFile(dirpath+i+"\\info.csv");
             }
         }
         catch (IOException ioex)
@@ -62,7 +62,7 @@ public class Serwer {
                 // TODO: 16.06.2019 tutaj wysylanie na poczatku polaczenia
                 while (true) {
                     disc.get(0).updateSize();
-                    Collections.sort(disc,Collections.reverseOrder());
+                    Collections.sort(disc);
                     new Receiver(socket, "server", disc.get(0).dirpath).run();
 
                 }
