@@ -18,6 +18,7 @@ import static projektPaczkKlient.Messenger.sendMessage;
 
 public class Serwer {
     public static Map<String,Socket> mapOfClients;
+    private static
     public static void main(String[] args){
         //creating 5 directories
         String dirpath = "C:\\Users\\kowal\\Desktop\\projek\\Dysk";
@@ -46,7 +47,23 @@ public class Serwer {
             return;
         }
     }
+    private static class Controller implements Runnable {
+        ArrayList<Receiver> taskList;
+        public ExecutorService pool;
 
+        public Controller(ExecutorService pool) {
+            this.pool = pool;
+            taskList = new ArrayList<>();
+        }
+        private int numberofclientsconnected(){
+            return mapOfClients.size();
+        }
+
+        @Override
+        public void run() {
+
+        }
+    }
     private static class ClientHandler implements Runnable{
         private Socket socket;
         //private String filepath;
@@ -69,10 +86,12 @@ public class Serwer {
             try {
 
                 username =receiveMessage(socket);
-                while(mapOfClients.containsKey(username)) {
+                if(mapOfClients.containsKey(username)) {
                     sendMessage(socket,"nametaken");
-                    username=receiveMessage(socket);
+                    socket.close();
+                    return;
                 }
+                sendMessage(socket,"welcome");
                 mapOfClients.put(username,socket);
                 sendEverything();
                 //wielki while operujący wszystkim
@@ -141,16 +160,31 @@ public class Serwer {
                 sendMessage(socket,"nosuchclient");
         }
         private void sendEverything() throws  IOException, InterruptedException{
+            String listoffilenames = receiveMessage(socket);
+            String [] arroffilenames = listoffilenames.split(";");
+            ArrayList<String> currentlyOwnedByUser = new ArrayList<>();
+            for(int i =0;i<arroffilenames.length;i++){
+                currentlyOwnedByUser.add(arroffilenames[i]);
+            }
+
             List<String> whatDoYouOwnDisc;
+            ArrayList<String> toBeSent = new ArrayList<>();
             for(int disciterator =0;disciterator<5;disciterator++){
                 semaphore.acquire();
                 whatDoYouOwnDisc= CSVFileHandler.searchingForFiles(disc.get(disciterator).dirpath+"\\info.csv",username);
                 semaphore.release();
-                for(int listiterator = 0;listiterator<whatDoYouOwnDisc.size();listiterator++){
-                    sendMessage(socket,"more");
-                    new Sender(socket,username,whatDoYouOwnDisc.get(listiterator),semaphore).run();
-
+                for(String s : whatDoYouOwnDisc){
+                    if(!currentlyOwnedByUser.contains(s)){
+                        toBeSent.add(disc.get(disciterator).dirpath+"\\"+s);
+                    }
                 }
+
+            }
+            int howmany =toBeSent.size();
+            sendMessage(socket,String.valueOf(howmany));
+            ExecutorService pool = Executors.newFixedThreadPool(howmany);
+            for(int i =0;i<toBeSent.size();i++){
+                pool.execute(new Sender(socket,"server",toBeSent.get(i),semaphore));
             }
             sendMessage(socket,"nomore");
 
@@ -164,11 +198,11 @@ public class Serwer {
                 disc.get(0).updateSize();
                 Collections.sort(disc);
                 pool.execute(new Receiver(socket,"server",disc.get(0).dirpath,semaphore));
-                try {
+                /*try {
                     sleep(1000);//tymczasowy sleep nie do konca potrzebny ale jest
                 } catch (InterruptedException e) {
                     e.printStackTrace();
-                }
+                }*/
 
                 semaphore.release();
             }

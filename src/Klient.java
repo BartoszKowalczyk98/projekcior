@@ -1,3 +1,4 @@
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 import projektPaczkKlient.LocalDirectroyWatcher;
 import projektPaczkKlient.Receiver;
 import projektPaczkKlient.Sender;
@@ -6,72 +7,75 @@ import static projektPaczkKlient.Messenger.*;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 
-public class Klient {
+public class Klient implements  Runnable{
+    String username;
+    String filepath;
+    Socket socket;
+    Semaphore semaphore = new Semaphore(1);
+    LocalDirectroyWatcher localDirectroyWatcher;
+
+    public Klient(String username, String filepath) throws IOException {
+        this.username = username;
+        this.filepath = filepath;
+        this.socket = new Socket("127.0.0.1", 59898);
+        localDirectroyWatcher = new LocalDirectroyWatcher(filepath);
+    }
+
+
 
     public static void main(String[] args) throws IOException {
         if(args.length!=2){
             System.out.println("Not enough arguments!");
             return;
         }
-        String username = args[0];
-        String filepath = args[1];
-        Socket socket;
-        try{
-        socket = new Socket("127.0.0.1", 59898);}
-        finally {
-            System.out.println("connected to sever");
-        }
+        String arg1 = args[0];
+        String arg2 = args[1];
+        Klient client = new Klient(arg1,arg2);
+
+
+        //rozpoczynamy watek klienta na dobra sprawe
+
+
+    }
+
+    @Override
+    public void run() {
         //starting up the client and receivning all filles
-        final Semaphore semaphore = new Semaphore(1);
+
         sendMessage(socket,username);//who am i? now server knows :>
-        String commander;
-        while((commander=receiveMessage(socket)).equals("more")){
-            new Receiver(socket, username, filepath,semaphore).run();
-            //komunikat odbieram
-        }
-        if(commander.equals("nomore")){
-            System.out.println("for now i received all them sweet files");
-            //komunikat odebrałem czy ki huj
-        }
 
-        //startowanie obserwatora folderu czytaj robi snapshot tego co sie aktualnie tam znajduje
-        LocalDirectroyWatcher directroyWatcher = new LocalDirectroyWatcher(filepath);
-        try {
-            directroyWatcher.startup();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        //petla komunikacyjna z serverem
-        // TODO: 21.06.2019 rozbic to na metody ale generalnie raczej dziala 
-        while(!((commander=receiveMessage(socket)).equals("error"))){
-            directroyWatcher.check_For_New();
-            if(commander.equals("catch")){
-                //odbierz plik
-                new Receiver(socket,username,filepath,semaphore).run();
-
+        if(!receiveMessage(socket).equals("welcome")){
+            System.out.println("wrong arguments kretynie");
+            try {
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            else if(commander.equals("ready")){
-                //wyslij pliki musi odpalic x watkow do wysylania bo potrzebuje wyczyscic kolejke toBeSent
-                if(!directroyWatcher.toBeSent.isEmpty()){
-                    sendMessage(socket,"nothing");
-                }
-                else {
-                    sendMessage(socket,String.valueOf(directroyWatcher.toBeSent.size()));
-                    ExecutorService pool = Executors.newFixedThreadPool(directroyWatcher.toBeSent.size());
-                    for(int i =0;i<directroyWatcher.toBeSent.size();i++){
-                        pool.execute(new Sender(socket,username,directroyWatcher.toBeSent.get(i).getPath(),semaphore));
-                    }
-                }
+            return;
+        }
+    }
+    private void sendcurrentfilelist() throws IOException{
+        sendMessage(socket,"anythingnew");
+        sendMessage(socket,localDirectroyWatcher.getFileNames());
+
+        int howmany = Integer.valueOf(receiveMessage(socket));
+        if(howmany>0) {
+            ExecutorService pool = Executors.newFixedThreadPool(howmany);
+            for (int i = 0; i < howmany; i++){
+                pool.execute(new Receiver(socket,username,filepath,semaphore));
             }
 
         }
-
-
-
+        if(receiveMessage(socket).equals("nomore")){
+            return;
+        }
+        else
+            throw new IOException();
     }
 }
 /*

@@ -49,4 +49,12 @@ public class LocalDirectroyWatcher {
             }
         }
     }
+    public String getFileNames(){
+        String result=new String();
+        for(File f : checkpoint){
+
+            result=result+';'+f.getName();
+        }
+        return result;
+    }
 }

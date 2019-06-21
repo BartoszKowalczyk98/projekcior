@@ -54,9 +54,9 @@ public class Receiver implements Runnable{
             if(from.equals("server")){
                 //adding entry into csv file
                 if(this.newowner.equals("null"))
-                    appendingToCSVFile(fileWithUsername.Username,filepath+fileWithUsername.filename,filepath+"info.csv");
+                    appendingToCSVFile(fileWithUsername.Username, fileWithUsername.filename,filepath+"info.csv");
                 else
-                    appendingToCSVFile(this.newowner,filepath+fileWithUsername.filename,filepath+"info.csv");
+                    appendingToCSVFile(this.newowner, fileWithUsername.filename,filepath+"info.csv");
             }
 
         }
