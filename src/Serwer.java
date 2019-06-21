@@ -4,21 +4,19 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Collections;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
-
-import static java.lang.Thread.sleep;
 import static projektPaczkKlient.CSVFileHandler.createCSVFile;
 import static projektPaczkKlient.Messenger.receiveMessage;
 import static projektPaczkKlient.Messenger.sendMessage;
 
 public class Serwer {
     public static Map<String,Socket> mapOfClients;
-    private static
+    private static ArrayList<Receiver>
     public static void main(String[] args){
         //creating 5 directories
         String dirpath = "C:\\Users\\kowal\\Desktop\\projek\\Dysk";
@@ -66,7 +64,7 @@ public class Serwer {
     }
     private static class ClientHandler implements Runnable{
         private Socket socket;
-        //private String filepath;
+
         private List<DirectroyWithSize> disc = new ArrayList<>();
         private String  username;
         final Semaphore semaphore;
@@ -136,24 +134,8 @@ public class Serwer {
         private void receivefor(){
             String forwho =receiveMessage(socket);
             if(mapOfClients.containsKey(forwho)){
-                sendMessage(socket,"howmany");
-                int howmany=Integer.parseInt(receiveMessage(socket));
-                ExecutorService pool;
-                pool = Executors.newFixedThreadPool(howmany);
-
-                for(int i =0;i<howmany;i++)
-                {
-                    disc.get(0).updateSize();
-                    Collections.sort(disc);
-                    pool.execute(new Receiver(socket,"server",disc.get(0).dirpath,semaphore,forwho));
-                    try {
-                        sleep(1000);//tymczasowy sleep nie do konca potrzebny ale jest
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
-                    semaphore.release();
-                }
+                sendMessage(socket,"gimme");
+                //dodanie do kolejki do obslugi
                 sendMessage(socket,"received");
             }
             else
@@ -190,22 +172,7 @@ public class Serwer {
 
         }
         private void givemefiles(int howmany){
-            ExecutorService pool;
-            pool = Executors.newFixedThreadPool(howmany);
 
-            for(int i =0;i<howmany;i++)
-            {
-                disc.get(0).updateSize();
-                Collections.sort(disc);
-                pool.execute(new Receiver(socket,"server",disc.get(0).dirpath,semaphore));
-                /*try {
-                    sleep(1000);//tymczasowy sleep nie do konca potrzebny ale jest
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }*/
-
-                semaphore.release();
-            }
             sendMessage(socket,"received");
         }
 

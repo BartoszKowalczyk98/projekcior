@@ -1,13 +1,13 @@
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
+import projektPaczkKlient.ClientNotFoundException;
 import projektPaczkKlient.LocalDirectroyWatcher;
 import projektPaczkKlient.Receiver;
 import projektPaczkKlient.Sender;
 
+import static java.lang.Thread.sleep;
 import static projektPaczkKlient.Messenger.*;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
@@ -58,6 +58,27 @@ public class Klient implements  Runnable{
             }
             return;
         }
+
+
+        try {
+            while (true) {//z opcja zmiany na hitbutton to kaniet
+                sendcurrentfilelist();//pobranie plikow na starcie tych co jeszcze ich nie mam
+                checkForNewAndSendThem();
+                String [] ludzie = getOtherClients();
+                sendToUser(ludzie[0],"sciezka do pliu");
+                localDirectroyWatcher.check_For_New();// niech ustawi label na sprawdzam
+            }
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        catch (InterruptedException intex)
+        {
+            intex.printStackTrace();
+        }
+        catch (ClientNotFoundException cnfex){
+            cnfex.GetWarning();
+        }
     }
     private void sendcurrentfilelist() throws IOException{
         sendMessage(socket,"anythingnew");
@@ -76,6 +97,41 @@ public class Klient implements  Runnable{
         }
         else
             throw new IOException();
+    }
+
+    private void checkForNewAndSendThem()throws  IOException ,InterruptedException{
+        localDirectroyWatcher.check_For_New();
+        if(localDirectroyWatcher.toBeSent.isEmpty())
+            return;
+        int howmany=localDirectroyWatcher.toBeSent.size();
+        sendMessage(socket,String.valueOf(howmany));
+        ExecutorService pool = Executors.newFixedThreadPool(howmany);
+        for(int i =0;i<howmany;i++){
+            pool.execute(new Sender(socket,username,localDirectroyWatcher.toBeSent.get(i).getPath(),semaphore));
+        }
+        sleep(100);
+        localDirectroyWatcher.toBeSent.clear();//czyszczenie kolejki do wyslania
+
+    }
+
+    private String [] getOtherClients(){
+        sendMessage(socket,"clientlist");
+        return receiveMessage(socket).split(",");
+    }
+
+    private void sendToUser(String forWho,String filetosend) throws ClientNotFoundException{
+        sendMessage(socket,"sendto");
+        sendMessage(socket,forWho);
+        String whatDoesServersay = receiveMessage(socket);
+        if(whatDoesServersay.equals("nosuchclient")){
+            throw new ClientNotFoundException();
+        }
+        else{
+            new Sender(socket,username,filetosend,semaphore);
+        }
+        if(receiveMessage(socket).equals("received")){
+            System.out.println("git");
+        }
     }
 }
 /*
