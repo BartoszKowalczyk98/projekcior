@@ -2,6 +2,7 @@ package projektPaczkKlient;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.concurrent.Semaphore;
 
 import static java.lang.Thread.sleep;
 import static projektPaczkKlient.CSVFileHandler.appendingToCSVFile;
@@ -10,11 +11,13 @@ public class Receiver implements Runnable{
     public Socket socket;
     public String from;
     public String filepath;
-    public Receiver(Socket socket, String from, String whereto) {
+    final Semaphore semaphore;
+    public Receiver(Socket socket, String from, String whereto, Semaphore semaphore) {
         this.socket = socket;
         this.from = from;
         this.filepath = whereto+"\\";
-        this.run();
+        this.semaphore=semaphore;
+        //this.run();
     }
 
     @Override
@@ -22,6 +25,7 @@ public class Receiver implements Runnable{
 
         try {
             ///wczytanie obiektu ze streama
+            semaphore.acquire();
             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
             FileWithUsername fileWithUsername =(FileWithUsername) ois.readObject();
 
@@ -42,7 +46,7 @@ public class Receiver implements Runnable{
                 //adding entry into csv file
                 appendingToCSVFile(fileWithUsername.Username,filepath+fileWithUsername.filename,filepath+"info.csv");
             }
-            sleep(100);//tymczasowy sleep nie do konca potrzebny ale jest
+
         }
         catch (FileNotFoundException fifex){
             System.out.println("file not found exception in receiving!");
@@ -61,6 +65,7 @@ public class Receiver implements Runnable{
             intex.printStackTrace();
         }
         finally {
+            semaphore.release();
             return;
         }
     }

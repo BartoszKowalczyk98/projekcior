@@ -8,7 +8,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 
+import static java.lang.Thread.sleep;
 import static projektPaczkKlient.CSVFileHandler.createCSVFile;
 import static projektPaczkKlient.Messenger.receiveMessage;
 import static projektPaczkKlient.Messenger.sendMessage;
@@ -47,9 +49,10 @@ public class Serwer {
         //private String filepath;
         private List<DirectroyWithSize> disc = new ArrayList<>();
         private String  username;
+        final Semaphore semaphore;
         ClientHandler(Socket socket,String directory) {
             this.socket=socket;
-          //  this.filepath = directory;
+            this.semaphore = new Semaphore(1);
             this.username="unknown";
             for(int i =1;i<6;i++){
                 disc.add(new DirectroyWithSize(directory+i));
@@ -72,26 +75,45 @@ public class Serwer {
                     whatDoYouOwnDisc= CSVFileHandler.searchingForFiles(disc.get(disciterator).dirpath+"\\info.csv",username);
                     for(int listiterator = 0;listiterator<whatDoYouOwnDisc.size();listiterator++){
                         sendMessage(socket,"more");
-                        new Sender(socket,username,whatDoYouOwnDisc.get(listiterator)).run();
+                        new Sender(socket,username,whatDoYouOwnDisc.get(listiterator),semaphore).run();
 
                     }
                 }
                 sendMessage(socket,"nomore");
-
-                while (true) {
+                String flaga = receiveMessage(socket);
+                ExecutorService pool;
+                while (!flaga.equals("kaniet")) {
                     disc.get(0).updateSize();
                     Collections.sort(disc);
-                    String howmany = receiveMessage(socket);
-                    int lim = Integer.parseInt(howmany);
-                    ExecutorService pool = Executors.newFixedThreadPool(lim);
+                    //String howmany = receiveMessage(socket);
+                    System.out.println(flaga);
+                    int lim = Integer.parseInt(flaga);
+                    pool = Executors.newFixedThreadPool(lim);
+
                     for(int i =0;i<lim;i++)
                     {
+                        disc.get(0).updateSize();
                         Collections.sort(disc);
-                        pool.execute(new Receiver(socket,"server",disc.get(0).dirpath));
-                    }
+                        pool.execute(new Receiver(socket,"server",disc.get(0).dirpath,semaphore));
+                        try {
+                            sleep(1000);//tymczasowy sleep nie do konca potrzebny ale jest
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        /*while(!semaphore.tryAcquire()){
+                            //label ze jest w trakcie wysylania czekaj tu kurwa
 
+
+                            semaphore.release();
+                        }*/
+
+                    }
+                    // TODO: 21.06.2019 rozbic to na metody prywatne 
+                    sendMessage(socket,"mam");
+                    flaga=receiveMessage(socket);
                 }
 
+                while  (true);
 
             }
             catch (IOException ioex) {
@@ -109,12 +131,12 @@ public class Serwer {
 
 
 // TODO: 16.06.2019 drugi klient
-// TODO: 16.06.2019 rownolegle przesylanie
+
 // TODO: 21.06.2019 semafor na csv
 /*
 C. Serwer:
 + 5 folderow, ktore symulujÄ 5 serwerow lub 5 dyskow
-- Klient wysyla np. 10 plikow, wiec serwer uruchamia iles watkow na ktorych rownolegle kopiuje pliki do tych dyskow (folderow)
++- Klient wysyla np. 10 plikow, wiec serwer uruchamia iles watkow na ktorych rownolegle kopiuje pliki do tych dyskow (folderow)
 +- Wymagany jest kontroler, ktory tak rozlozy ruch, ze do kazdego z dyskow (folderow) jednoczesnie jest kopiowana taka sama liczba plikow
 +- Jezeli podlaczy sie drugi klient, ktory zacznie wysylac pliki, nie moze on czekac az skoncza sie zadania pierwszego klienta. Lista zadan na serwerze musi ulec reorganizacji, tak aby obydwaj klienci mieli wrazenie natychmiastowej obslugi (zaproponuj stosowny algorytm)
 +- Na kazdym dysku serwera znajduje sie plik tekstowy (np. csv), w ktorym jest opisana zawartosc danego dysku i kto jest jego wlascicielem. Zauwaz, ze plik bedzie uaktualniany przez wiele watkow. Rozwiaz ten problem.

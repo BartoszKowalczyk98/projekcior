@@ -8,9 +8,9 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 
 public class Klient {
-
 
     public static void main(String[] args) throws IOException {
         if(args.length!=2){
@@ -26,10 +26,11 @@ public class Klient {
             System.out.println("connected to sever");
         }
         //starting up the client and receivning all filles
+        final Semaphore semaphore = new Semaphore(1);
         sendMessage(socket,username);//who am i? now server knows :>
         String commander;
         while((commander=receiveMessage(socket)).equals("more")){
-            new Receiver(socket, username, filepath).run();
+            new Receiver(socket, username, filepath,semaphore).run();
             //komunikat odbieram
         }
         if(commander.equals("nomore")){
@@ -45,11 +46,12 @@ public class Klient {
             e.printStackTrace();
         }
         //petla komunikacyjna z serverem
+        // TODO: 21.06.2019 rozbic to na metody ale generalnie raczej dziala 
         while(!((commander=receiveMessage(socket)).equals("error"))){
             directroyWatcher.check_For_New();
             if(commander.equals("catch")){
                 //odbierz plik
-                new Receiver(socket,username,filepath).run();
+                new Receiver(socket,username,filepath,semaphore).run();
 
             }
             else if(commander.equals("ready")){
@@ -61,7 +63,7 @@ public class Klient {
                     sendMessage(socket,String.valueOf(directroyWatcher.toBeSent.size()));
                     ExecutorService pool = Executors.newFixedThreadPool(directroyWatcher.toBeSent.size());
                     for(int i =0;i<directroyWatcher.toBeSent.size();i++){
-                        pool.execute(new Sender(socket,username,directroyWatcher.toBeSent.get(i).getPath()));
+                        pool.execute(new Sender(socket,username,directroyWatcher.toBeSent.get(i).getPath(),semaphore));
                     }
                 }
             }
