@@ -5,6 +5,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -16,7 +17,9 @@ import static projektPaczkKlient.Messenger.sendMessage;
 
 public class Serwer {
     public static Map<String,Socket> mapOfClients;
-    private static ArrayList<Receiver>
+    private static ArrayList<ReceiverThreads> receiverThreadsArrayList=new ArrayList<>();
+    public static List<DirectroyWithSize> disc = new ArrayList<>();
+
     public static void main(String[] args){
         //creating 5 directories
         String dirpath = "C:\\Users\\kowal\\Desktop\\projek\\Dysk";
@@ -25,6 +28,9 @@ public class Serwer {
                 File dir = new File(dirpath+i);
                 dir.mkdir();
                 createCSVFile(dirpath+i+"\\info.csv");
+            }
+            for(int i =1;i<6;i++){
+                disc.add(new DirectroyWithSize(dirpath+i));
             }
         }
         catch (IOException ioex)
@@ -45,36 +51,56 @@ public class Serwer {
             return;
         }
     }
-    private static class Controller implements Runnable {
-        ArrayList<Receiver> taskList;
-        public ExecutorService pool;
 
-        public Controller(ExecutorService pool) {
-            this.pool = pool;
-            taskList = new ArrayList<>();
+    //////////////////////////////////////////////////////////////////////////////////////////
+    private static class ReceiverThreads{
+        public int howManyFiles;
+        public Receiver receiver;
+        public boolean done;
+
+        public ReceiverThreads(int howManyFiles,Receiver receiver) {
+            this.howManyFiles = howManyFiles;
+            this.receiver=receiver;
+            this.done=false;
         }
+    }///ma tylko przechowywac ile watkow odbieranych i czy zrobione
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////
+    private static class Controller implements Runnable {
+
+        private ExecutorService pool;
+        private Socket lastuser;
+        private Socket currentuser;
+        public Controller() {}
         private int numberofclientsconnected(){
             return mapOfClients.size();
         }
 
         @Override
         public void run() {
+            while(true){
+                //niech trzyma najmniejszy folder na górze listy
+                disc.get(0).updateSize();
+                Collections.sort(disc);
 
+            }
         }
-    }
+    }///ma liste watkow ktore ma wykonywac i przestawiac ich flagi na true jak sie wykonaja
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////
     private static class ClientHandler implements Runnable{
         private Socket socket;
 
-        private List<DirectroyWithSize> disc = new ArrayList<>();
+
         private String  username;
         final Semaphore semaphore;
         ClientHandler(Socket socket,String directory) {
             this.socket=socket;
             this.semaphore = new Semaphore(1);
             this.username="unknown";
-            for(int i =1;i<6;i++){
-                disc.add(new DirectroyWithSize(directory+i));
-            }
+
 
         }
 
@@ -135,7 +161,9 @@ public class Serwer {
             String forwho =receiveMessage(socket);
             if(mapOfClients.containsKey(forwho)){
                 sendMessage(socket,"gimme");
-                //dodanie do kolejki do obslugi
+                ReceiverThreads recfor = new ReceiverThreads(1,new Receiver(socket,"server",disc.get(0).dirpath,semaphore,forwho));
+                receiverThreadsArrayList.add(recfor);
+                while(!recfor.done);
                 sendMessage(socket,"received");
             }
             else
@@ -172,7 +200,9 @@ public class Serwer {
 
         }
         private void givemefiles(int howmany){
-
+            ReceiverThreads gibfilez = new ReceiverThreads(howmany,new Receiver(socket,"server",disc.get(0).dirpath,semaphore));
+            receiverThreadsArrayList.add(gibfilez);
+            while(!gibfilez.done);
             sendMessage(socket,"received");
         }
 
