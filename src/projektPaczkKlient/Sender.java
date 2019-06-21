@@ -7,10 +7,12 @@ public class Sender implements Runnable{
     private Socket socket;
     private String from;
     private String filepath;
+    //from means who started this class/thread
     public Sender(Socket socket,String from,String filepath) {
         this.socket=socket;
         this.from=from;
         this.filepath=filepath;
+        this.run();
     }
     private byte[] fileToBytearr(String filepath) throws  IOException {
         File file = new File(filepath);

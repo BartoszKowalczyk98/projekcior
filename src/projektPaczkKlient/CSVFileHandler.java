@@ -1,6 +1,8 @@
 package projektPaczkKlient;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public interface CSVFileHandler {
     //public String filepath;
@@ -18,19 +20,18 @@ public interface CSVFileHandler {
                 file.createNewFile();
                 return true;
     }
-
+    ///teoretycznie dziala bez zastrzezen
     static boolean appendingToCSVFile(String username,String filename ,String filepath) throws  IOException{
 
         File csvfile = new File(filepath);
 
         if(csvfile.isFile()) {
-            FileWriter cvsWriter = new FileWriter(csvfile);
-            cvsWriter.append(username);
-            cvsWriter.append(',');
-            cvsWriter.append(filename);
-            cvsWriter.append('\n');
-            cvsWriter.flush();
-            cvsWriter.close();
+            FileWriter cvsWriter = new FileWriter(csvfile,true);
+            BufferedWriter bufferedWriter =new BufferedWriter(cvsWriter);
+            PrintWriter printWriter = new PrintWriter(bufferedWriter);
+            printWriter.println(username+','+filename);
+            printWriter.flush();
+            printWriter.close();
 
             return true;
         }
@@ -48,19 +49,20 @@ public interface CSVFileHandler {
         }
         return false;
     }
-
-    public boolean searchingForFiles(String filename) throws IOException {
+*/
+// TODO: 20.06.2019 opracowanc tak zeby zwracalo liste plikow nalezacych do danego usera
+    static ArrayList<String> searchingForFiles(String filepath,String username) throws IOException {
         BufferedReader cvsreader = new BufferedReader(new FileReader(filepath));
         String row;
+        ArrayList<String> outcome = new ArrayList<>();
         while ((row = cvsreader.readLine())!=null){
             String[] data = row.split(",");
-            if(data[1].equals(filename))
-                return true;
+            if(data[0].equals(username)){
+                outcome.add(data[1]);
+            }
         }
-        return false;
+        return outcome;//zwraca liste sciezek do plikw ktore zgadzaja sie co do username'a
     }
-*/
-
 
 
 }

@@ -14,6 +14,7 @@ public class Receiver implements Runnable{
         this.socket = socket;
         this.from = from;
         this.filepath = whereto+"\\";
+        this.run();
     }
 
     @Override
@@ -24,12 +25,12 @@ public class Receiver implements Runnable{
             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
             FileWithUsername fileWithUsername =(FileWithUsername) ois.readObject();
 
-            //stworzenie pliku na dysku
+            //stworzenie pliku w folderze
             File file = new File(filepath+fileWithUsername.filename);
-            file.createNewFile();
             if(file.exists()){
                 file.delete();
             }
+            file.createNewFile();
 
             //wpisanie do pliku
             FileOutputStream fos = new FileOutputStream(file);
