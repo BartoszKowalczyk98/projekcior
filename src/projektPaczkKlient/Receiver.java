@@ -12,11 +12,20 @@ public class Receiver implements Runnable{
     public String from;
     public String filepath;
     final Semaphore semaphore;
+    private String newowner="null";
     public Receiver(Socket socket, String from, String whereto, Semaphore semaphore) {
         this.socket = socket;
         this.from = from;
         this.filepath = whereto+"\\";
         this.semaphore=semaphore;
+        //this.run();
+    }
+    public Receiver(Socket socket, String from, String whereto, Semaphore semaphore,String forwho) {
+        this.socket = socket;
+        this.from = from;
+        this.filepath = whereto+"\\";
+        this.semaphore=semaphore;
+        this.newowner=forwho;
         //this.run();
     }
 
@@ -44,7 +53,10 @@ public class Receiver implements Runnable{
             fos.close();
             if(from.equals("server")){
                 //adding entry into csv file
-                appendingToCSVFile(fileWithUsername.Username,filepath+fileWithUsername.filename,filepath+"info.csv");
+                if(this.newowner.equals("null"))
+                    appendingToCSVFile(fileWithUsername.Username,filepath+fileWithUsername.filename,filepath+"info.csv");
+                else
+                    appendingToCSVFile(this.newowner,filepath+fileWithUsername.filename,filepath+"info.csv");
             }
 
         }
