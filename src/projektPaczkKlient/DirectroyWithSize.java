@@ -14,7 +14,7 @@ public class DirectroyWithSize implements Comparable<DirectroyWithSize>{
         File directory = new File(dirpath);
         for(File file: directory.listFiles()){
             if(file.isFile()){
-                size+=file.length();
+                size+=1;
             }
         }
     }

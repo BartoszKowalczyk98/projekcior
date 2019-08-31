@@ -7,23 +7,39 @@ import static java.lang.Thread.sleep;
 import static projektPaczkKlient.Messenger.*;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 public class Klient implements  Runnable{
     String username;
     String filepath;
     Socket socket;
-    Semaphore semaphore = new Semaphore(1);
+    ObjectInputStream objectInputStream;
+    ObjectOutputStream objectOutputStream;
+    Semaphore semaphore;
+
     LocalDirectroyWatcher localDirectroyWatcher;
 
     public Klient(String username, String filepath) throws IOException {
         this.username = username;
         this.filepath = filepath;
-        this.socket = new Socket("127.0.0.1", 59898);
+        try {
+            this.socket = new Socket("127.0.0.1", 59898);
+            this.objectInputStream= new ObjectInputStream( socket.getInputStream());
+            this.objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+        }
+        catch (IOException ioex){
+            ioex.printStackTrace();
+        }
         localDirectroyWatcher = new LocalDirectroyWatcher(filepath);
+        localDirectroyWatcher.startup();
+
+        ////////tworzenie okna do interfejsu graficznego
     }
 
 
@@ -33,10 +49,8 @@ public class Klient implements  Runnable{
             System.out.println("Not enough arguments!");
             return;
         }
-        String arg1 = args[0];
-        String arg2 = args[1];
-        Klient client = new Klient(arg1,arg2);
-
+        Klient client = new Klient(args[0],args[1]);
+        client.run();
 
         //rozpoczynamy watek klienta na dobra sprawe
 
@@ -61,12 +75,12 @@ public class Klient implements  Runnable{
 
 
         try {
+            sendcurrentfilelist();//pobranie plikow na starcie tych co jeszcze ich nie mam
             while (true) {//z opcja zmiany na hitbutton to kaniet
-                sendcurrentfilelist();//pobranie plikow na starcie tych co jeszcze ich nie mam
-                checkForNewAndSendThem();
-                String [] ludzie = getOtherClients();
-                sendToUser(ludzie[0],"sciezka do pliu");
-                localDirectroyWatcher.check_For_New();// niech ustawi label na sprawdzam
+                TimeUnit.SECONDS.sleep(4);
+                checkForNewAndSendThem();//glowny watcher i wysylacz
+                /*localDirectroyWatcher.check_For_New();// niech ustawi label na sprawdzam*/
+                //System.out.println("przeszlo petle!");
             }
         }
         catch (IOException e) {
@@ -76,22 +90,23 @@ public class Klient implements  Runnable{
         {
             intex.printStackTrace();
         }
-        catch (ClientNotFoundException cnfex){
+        /*catch (ClientNotFoundException cnfex){
             cnfex.GetWarning();
-        }
+        }*/
     }
     private void sendcurrentfilelist() throws IOException{
         sendMessage(socket,"anythingnew");
         sendMessage(socket,localDirectroyWatcher.getFileNames());
-
+        //System.out.println(localDirectroyWatcher.getFileNames());
         int howmany = Integer.valueOf(receiveMessage(socket));
         if(howmany>0) {
             ExecutorService pool = Executors.newFixedThreadPool(howmany);
             for (int i = 0; i < howmany; i++){
-                pool.execute(new Receiver(socket,username,filepath,semaphore));
+                pool.execute(new Receiver(socket,username,filepath));
             }
-
+            while(!pool.isTerminated());
         }
+
         if(receiveMessage(socket).equals("nomore")){
             return;
         }
@@ -100,6 +115,7 @@ public class Klient implements  Runnable{
     }
 
     private void checkForNewAndSendThem()throws  IOException ,InterruptedException{
+        System.out.println("pacze czy nie ma cos nowego");
         localDirectroyWatcher.check_For_New();
         if(localDirectroyWatcher.toBeSent.isEmpty())
             return;
@@ -107,9 +123,11 @@ public class Klient implements  Runnable{
         sendMessage(socket,String.valueOf(howmany));
         ExecutorService pool = Executors.newFixedThreadPool(howmany);
         for(int i =0;i<howmany;i++){
-            pool.execute(new Sender(socket,username,localDirectroyWatcher.toBeSent.get(i).getPath(),semaphore));
+            //try aquire mutexa
+            pool.execute(new Sender(socket,username,localDirectroyWatcher.toBeSent.get(i).getPath()));
         }
         sleep(100);
+        System.out.println("wyslalem");
         localDirectroyWatcher.toBeSent.clear();//czyszczenie kolejki do wyslania
 
     }
@@ -127,7 +145,7 @@ public class Klient implements  Runnable{
             throw new ClientNotFoundException();
         }
         else{
-            new Sender(socket,username,filetosend,semaphore);
+            new Sender(socket,username,filetosend);
         }
         if(receiveMessage(socket).equals("received")){
             System.out.println("git");

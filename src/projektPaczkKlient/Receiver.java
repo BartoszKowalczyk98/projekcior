@@ -2,41 +2,38 @@ package projektPaczkKlient;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.concurrent.Semaphore;
 
-import static java.lang.Thread.sleep;
 import static projektPaczkKlient.CSVFileHandler.appendingToCSVFile;
 
+
 public class Receiver implements Runnable{
-    public Socket socket;
-    public String from;
+    public ObjectInputStream ois;
     public String filepath;
-    final Semaphore semaphore;
+    public String from;
+    FileWithUsername fileWithUsername;
     private String newowner="null";
-    public Receiver(Socket socket, String from, String whereto, Semaphore semaphore) {
-        this.socket = socket;
-        this.from = from;
-        this.filepath = whereto+"\\";
-        this.semaphore=semaphore;
-        //this.run();
+
+    public Receiver(ObjectInputStream objectInputStream,String from,String filepath) {
+        this.ois = objectInputStream;
+        this.from=from;
+        this.filepath=filepath;
     }
-    public Receiver(Socket socket, String from, String whereto, Semaphore semaphore,String forwho) {
+    /*
+    public Receiver(Socket socket,String from,String filepath, String forwho) {
         this.socket = socket;
-        this.from = from;
-        this.filepath = whereto+"\\";
-        this.semaphore=semaphore;
+        this.filepath=filepath+"\\";
+        this.from=from;
         this.newowner=forwho;
-        //this.run();
-    }
+
+    }*/
 
     @Override
     public void run() {
 
         try {
             ///wczytanie obiektu ze streama
-            semaphore.acquire();
-            ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
-            FileWithUsername fileWithUsername =(FileWithUsername) ois.readObject();
+            fileWithUsername =(FileWithUsername) ois.readObject();
+
 
             //stworzenie pliku w folderze
             File file = new File(filepath+fileWithUsername.filename);
@@ -58,7 +55,6 @@ public class Receiver implements Runnable{
                 else
                     appendingToCSVFile(this.newowner, fileWithUsername.filename,filepath+"info.csv");
             }
-
         }
         catch (FileNotFoundException fifex){
             System.out.println("file not found exception in receiving!");
@@ -72,12 +68,7 @@ public class Receiver implements Runnable{
             System.out.println("Error class not found!");
             cnfex.printStackTrace();
         }
-        catch (InterruptedException intex){
-            System.out.println("interrupted exception");
-            intex.printStackTrace();
-        }
         finally {
-            semaphore.release();
             return;
         }
     }

@@ -3,21 +3,18 @@ import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
+import java.util.*;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+
 import static projektPaczkKlient.CSVFileHandler.createCSVFile;
 import static projektPaczkKlient.Messenger.receiveMessage;
 import static projektPaczkKlient.Messenger.sendMessage;
 
 public class Serwer {
     public static Map<String,Socket> mapOfClients;
-    private static ArrayList<ReceiverThreads> receiverThreadsArrayList=new ArrayList<>();
     public static List<DirectroyWithSize> disc = new ArrayList<>();
 
     public static void main(String[] args){
@@ -39,8 +36,8 @@ public class Serwer {
             return;
         }
         try (ServerSocket listener = new ServerSocket(59898)){
+            mapOfClients= new TreeMap<>();
             System.out.println("server is running");
-
             ExecutorService pool = Executors.newFixedThreadPool(5);
             while (true){
                 pool.execute(new ClientHandler(listener.accept(),dirpath));
@@ -51,43 +48,6 @@ public class Serwer {
             return;
         }
     }
-
-    //////////////////////////////////////////////////////////////////////////////////////////
-    private static class ReceiverThreads{
-        public int howManyFiles;
-        public Receiver receiver;
-        public boolean done;
-
-        public ReceiverThreads(int howManyFiles,Receiver receiver) {
-            this.howManyFiles = howManyFiles;
-            this.receiver=receiver;
-            this.done=false;
-        }
-    }///ma tylko przechowywac ile watkow odbieranych i czy zrobione
-
-
-    /////////////////////////////////////////////////////////////////////////////////////////////
-    private static class Controller implements Runnable {
-
-        private ExecutorService pool;
-        private Socket lastuser;
-        private Socket currentuser;
-        public Controller() {}
-        private int numberofclientsconnected(){
-            return mapOfClients.size();
-        }
-
-        @Override
-        public void run() {
-            while(true){
-                //niech trzyma najmniejszy folder na górze listy
-                disc.get(0).updateSize();
-                Collections.sort(disc);
-
-            }
-        }
-    }///ma liste watkow ktore ma wykonywac i przestawiac ich flagi na true jak sie wykonaja
-
 
     /////////////////////////////////////////////////////////////////////////////////////////////
     private static class ClientHandler implements Runnable{
@@ -117,7 +77,7 @@ public class Serwer {
                 }
                 sendMessage(socket,"welcome");
                 mapOfClients.put(username,socket);
-                sendEverything();
+                //sendEverything();
                 //wielki while operujący wszystkim
                 String whatClientSaid;
                 do {
@@ -161,9 +121,11 @@ public class Serwer {
             String forwho =receiveMessage(socket);
             if(mapOfClients.containsKey(forwho)){
                 sendMessage(socket,"gimme");
-                ReceiverThreads recfor = new ReceiverThreads(1,new Receiver(socket,"server",disc.get(0).dirpath,semaphore,forwho));
+
+                /*ReceiverThreads recfor = new ReceiverThreads(1,socket,forwho);
                 receiverThreadsArrayList.add(recfor);
-                while(!recfor.done);
+                while(!recfor.done);*/
+
                 sendMessage(socket,"received");
             }
             else
@@ -191,18 +153,25 @@ public class Serwer {
 
             }
             int howmany =toBeSent.size();
+
             sendMessage(socket,String.valueOf(howmany));
-            ExecutorService pool = Executors.newFixedThreadPool(howmany);
-            for(int i =0;i<toBeSent.size();i++){
-                pool.execute(new Sender(socket,"server",toBeSent.get(i),semaphore));
+            if(howmany>0) {
+                ExecutorService pool = Executors.newFixedThreadPool(howmany);
+                for (int i = 0; i < howmany; i++) {
+                    pool.execute(new Sender(socket, "server", toBeSent.get(i)));
+                }
+                while (!pool.isTerminated()) ;
             }
             sendMessage(socket,"nomore");
 
         }
         private void givemefiles(int howmany){
-            ReceiverThreads gibfilez = new ReceiverThreads(howmany,new Receiver(socket,"server",disc.get(0).dirpath,semaphore));
-            receiverThreadsArrayList.add(gibfilez);
+            //ReceiverThreads gibfilez = new ReceiverThreads(howmany,socket);
+            System.out.println("mam odbierac");
+
+            /*receiverThreadsArrayList.add(gibfilez);
             while(!gibfilez.done);
+            */
             sendMessage(socket,"received");
         }
 
@@ -215,9 +184,11 @@ public class Serwer {
 
 
 
-// TODO: 16.06.2019 drugi klient
+
 
 // TODO: 21.06.2019 semafor na csv
+// TODO: 31.08.2019 cos typu zadanie co walne do kolejki i bedzie dzialalo
+// TODO: 31.08.2019 semafor na odbieranie i wysylanie
 /*
 C. Serwer:
 + 5 folderow, ktore symulujÄ 5 serwerow lub 5 dyskow
