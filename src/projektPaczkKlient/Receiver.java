@@ -1,75 +1,45 @@
 package projektPaczkKlient;
 
 import java.io.*;
-import java.net.Socket;
+import java.util.Random;
 
-import static projektPaczkKlient.CSVFileHandler.appendingToCSVFile;
-
-
-public class Receiver implements Runnable{
+/**
+ * thread class that is used for receiving an object from stream
+ */
+public class Receiver implements Runnable {
+    /**stream from which read an object     */
     public ObjectInputStream ois;
-    public String filepath;
+    /**who is the owner of the task     */
     public String from;
-    FileWithUsername fileWithUsername;
-    private String newowner="null";
+    /**object that holds information about file that is transmitted     */
+    public FileWithUsername fileWithUsername;
 
-    public Receiver(ObjectInputStream objectInputStream,String from,String filepath) {
+    /**
+     * constructor for class
+     * @param objectInputStream stream
+     * @param from who started this task
+     */
+    public Receiver(ObjectInputStream objectInputStream, String from) {
         this.ois = objectInputStream;
-        this.from=from;
-        this.filepath=filepath;
+        this.from = from;
+
     }
-    /*
-    public Receiver(Socket socket,String from,String filepath, String forwho) {
-        this.socket = socket;
-        this.filepath=filepath+"\\";
-        this.from=from;
-        this.newowner=forwho;
 
-    }*/
 
+    /**
+     * method reads object from stream and assigns it to fileWithUsername
+     */
     @Override
     public void run() {
-
         try {
-            ///wczytanie obiektu ze streama
-            fileWithUsername =(FileWithUsername) ois.readObject();
-
-
-            //stworzenie pliku w folderze
-            File file = new File(filepath+fileWithUsername.filename);
-            if(file.exists()){
-                file.delete();
-            }
-            file.createNewFile();
-
-            //wpisanie do pliku
-            FileOutputStream fos = new FileOutputStream(file);
-            fos.write(fileWithUsername.bytesarray);
-
-            //zamkniecie tego co nie potrzebne
-            fos.close();
-            if(from.equals("server")){
-                //adding entry into csv file
-                if(this.newowner.equals("null"))
-                    appendingToCSVFile(fileWithUsername.Username, fileWithUsername.filename,filepath+"info.csv");
-                else
-                    appendingToCSVFile(this.newowner, fileWithUsername.filename,filepath+"info.csv");
-            }
-        }
-        catch (FileNotFoundException fifex){
-            System.out.println("file not found exception in receiving!");
-        }
-        catch (IOException ioex)
-        {
+            fileWithUsername = (FileWithUsername) ois.readObject();
+            Thread.sleep(new Random().nextInt(100));
+        } catch (IOException ioex) {
             ioex.printStackTrace();
-            System.out.println("IOException in  receiving the file!");
-        }
-        catch (ClassNotFoundException cnfex){
-            System.out.println("Error class not found!");
+        } catch (ClassNotFoundException cnfex) {
             cnfex.printStackTrace();
-        }
-        finally {
-            return;
+        }catch (InterruptedException intex){
+            intex.printStackTrace();
         }
     }
 }
