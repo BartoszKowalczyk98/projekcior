@@ -59,7 +59,7 @@ public class Serwer {
 
         window = new Window("Server");
         for (int i=0;i<5;i++){
-            JTextArea jTextArea = new JTextArea(20,10);
+            JTextArea jTextArea = new JTextArea(40,20);
             jTextArea.setEditable(false);
             lists.add(jTextArea);
             GridBagConstraints gridBagConstraints = new GridBagConstraints();
@@ -202,7 +202,7 @@ public class Serwer {
                         int whichDiscIsIt = Integer.valueOf( helper.substring(helper.length()-1));//potrzebuje ostatnią cyferke z calego dirpatha z aktualnego disc w uzyciu
                         lists.get(whichDiscIsIt-1).append(filename+"\n");
                         try {
-                            TimeUnit.MILLISECONDS.sleep(1500);
+                            TimeUnit.MILLISECONDS.sleep(750);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }

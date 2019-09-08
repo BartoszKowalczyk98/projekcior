@@ -147,7 +147,7 @@ public class Klient implements Runnable {
                 window.jLabel.setText("Username taken or one of restricted words!");
 
                 try {
-                    TimeUnit.SECONDS.sleep(4);
+                    TimeUnit.SECONDS.sleep(2);
                     socket.close();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -165,9 +165,9 @@ public class Klient implements Runnable {
                 while (!window.finished) {//z opcja zmiany na hitbutton to kaniet
                     window.jLabel.setText("waiting");
                     checkIfServerHasNewFiles();
-                    TimeUnit.SECONDS.sleep(1);
+                    TimeUnit.MILLISECONDS.sleep(500);//sleepy tylko po to zeby bylo widac zmiane labela
                     checkForNewAndSendThem();//glowny watcher i wysylacz
-                    TimeUnit.SECONDS.sleep(1);
+                    TimeUnit.MILLISECONDS.sleep(500);
                     if (buttonPressed) {
                         window.jLabel.setText("choosing client and file");
                         buttonPressed = false;
@@ -242,7 +242,7 @@ public class Klient implements Runnable {
                             TimeUnit.SECONDS.sleep(2);
                         }
                     }
-                    TimeUnit.SECONDS.sleep(1);
+                    TimeUnit.MILLISECONDS.sleep(300);
 
                 }
             } catch (IOException e) {
@@ -275,7 +275,6 @@ public class Klient implements Runnable {
      * @throws IOException
      */
     private void checkIfServerHasNewFiles() throws IOException {
-        window.jLabel.setText("checking if server has new files");
         objectOutputStream.writeUTF("anythingnew");
         objectOutputStream.flush();
         objectOutputStream.writeUTF(localDirectroyWatcher.getFileNames());
@@ -345,7 +344,7 @@ public class Klient implements Runnable {
             pool.execute(new Sender(objectOutputStream, username, localDirectroyWatcher.toBeSent.get(i).getPath(), semaphore));
         }
         sleep(100);
-        System.out.println("wyslalem");
+
         localDirectroyWatcher.toBeSent.clear();//czyszczenie kolejki do wyslania
         while (!(objectInputStream.available() > 6)) ;
         if (!objectInputStream.readUTF().equals("received"))
@@ -394,9 +393,7 @@ public class Klient implements Runnable {
             while (thread.isAlive()) ;
         }
 
+        objectInputStream.readUTF();
 
-        if (objectInputStream.readUTF().equals("received")) {
-            System.out.println("git");
-        }
     }
 }
